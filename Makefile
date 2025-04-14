@@ -7,11 +7,11 @@ DEBUG := -g -fsanitize=address -lefence -Wall -Wextra #$(" ") #
 
 all: $(execs)
 
-task1: task1.c
+task1: task1.c task1_funcs.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(DEBUG)
 
-#conj_grad.o: conj_grad.c
-#	$(CC) $(CFLAGS) -c $< $(LDFLAGS) $(DEBUG) 
+task1_funcs.o: task1_funcs.c
+	$(CC) $(CFLAGS) -c $< $(LDFLAGS) $(DEBUG) 
 
 .PHONY: clean
 clean:
