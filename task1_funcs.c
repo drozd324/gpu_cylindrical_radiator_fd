@@ -1,19 +1,5 @@
 #include "task1_funcs.h"
 
-void alloc_matrix(float** matrix, int m, int n){
-	matrix = malloc(m * sizeof(float*));
-	for (int i=0; i<m; i++){
-		matrix[i] = malloc(n * sizeof(float));
-	}
-}
-
-void free_matrix(float** matrix, int m){
-	for (int i=0; i<m; i++){
-		free(matrix[i]);
-	}
-	free(matrix);
-}
-
 void init_matrix(float** matrix, int m, int n){
 	for (int i=0; i<m; i++){
 		matrix[i][0] = 0.98 * (float)((i+1)*(i+1)) / (float)(n*n); //(so the values range between 0.98/(float)(n*n) and 0.98)

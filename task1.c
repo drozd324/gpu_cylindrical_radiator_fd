@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
 	int iter = 10;
 	int calc_avg_temp = 0;
 
-    while ((option = getopt(argc, argv, "m:n:p:a:")) != -1) {
+    while ((option = getopt(argc, argv, "m:n:p:a")) != -1) {
         switch (option) {
             case 'm': // set num cols m of matrix
 	            m = atoi(optarg);
@@ -23,23 +23,22 @@ int main(int argc, char *argv[]) {
 				iter = atoi(optarg);
 				break;
 			case 'a': // sets caclulation of average temperature for each row
-				calc_avg_temp = atoi(optarg);
+				calc_avg_temp = 1;
 				break;
         }
     }
 	
+	// allocalte matrices a, b
 	float** a;
 	a = malloc(m * sizeof(float*));
 	for (int i=0; i<m; i++){
 		a[i] = malloc(n * sizeof(float));
 	}
-	//alloc_matrix(a, m, n);
 	float** b;
 	b = malloc(m * sizeof(float*));
 	for (int i=0; i<m; i++){
 		b[i] = malloc(n * sizeof(float));
 	}
-	//alloc_matrix(b, m, n);
 	
 	init_matrix(a, m, n);
 	init_matrix(b, m, n);
@@ -52,15 +51,20 @@ int main(int argc, char *argv[]) {
 	if (calc_avg_temp == 1){
 		float* thermometer = calloc(m, sizeof(float));
 		calculate_avg_temp(a, m, n, thermometer);
+	
+		printf("Average temperatures\n");
+		for (int t=0; t<m; t++){
+			printf("%f ", thermometer[t]);
+		}
+		printf("\n");
 		free(thermometer);
 	}	
 	
-	//free_matrix(a, m);
+	// free matrices a, b
 	for (int i=0; i<m; i++){
 		free(a[i]);
 	}
 	free(a);
-	//free_matrix(b, m);
 	for (int i=0; i<m; i++){
 		free(b[i]);
 	}

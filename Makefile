@@ -1,19 +1,23 @@
-execs := task1
+CC = gcc
+NVCC = nvcc
+DEBUG = $(" ") # -g -fsanitize=address -Wall -Wextra -lefence #$(" ") #
+DEBUGNV = -g -G #--target-processes #-g -Wall -W #$(" ") #
+NVCCFLAGS = -O4 --use_fast_math --compiler-options -funroll-loops -arch=sm_75
 
-CC := gcc 
-CFLAGS := -O3  
-LDFLAGS := 
-DEBUG := -g -fsanitize=address -lefence -Wall -Wextra #$(" ") #
-
-all: $(execs)
+all: task1# task2
 
 task1: task1.c task1_funcs.o
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(DEBUG)
+	    $(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(DEBUG)
 
 task1_funcs.o: task1_funcs.c
-	$(CC) $(CFLAGS) -c $< $(LDFLAGS) $(DEBUG) 
+	    $(CC) $(CFLAGS) -c $< $(LDFLAGS) $(DEBUG)
 
-.PHONY: clean
+#task2: task2.cu task2_funcs.o task1_funcs.o
+#	$(NVCC) -o $@ task2_funcs.o task1_funcs.o $< $(DEBUGNV) $(NVCCFLAGS)
+#
+#task2_funcs.o: task2_funcs.cu task2_funcs.h
+#	$(NVCC) -c task2_funcs.cu $(DEBUGNV) $(NVCCFLAGS)
+#
+
 clean:
-	rm -f *.o $(execs)
-
+	rm task1 task2 *.o
