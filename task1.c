@@ -29,16 +29,10 @@ int main(int argc, char *argv[]) {
     }
 	
 	// allocalte matrices a, b
-	float** a;
-	a = malloc(m * sizeof(float*));
-	for (int i=0; i<m; i++){
-		a[i] = malloc(n * sizeof(float));
-	}
-	float** b;
-	b = malloc(m * sizeof(float*));
-	for (int i=0; i<m; i++){
-		b[i] = malloc(n * sizeof(float));
-	}
+	float* a;
+	float* b;
+	a = malloc(m*n * sizeof(float));
+	b = malloc(m*n * sizeof(float*));
 	
 	init_matrix(a, m, n);
 	init_matrix(b, m, n);
@@ -61,13 +55,7 @@ int main(int argc, char *argv[]) {
 	}	
 	
 	// free matrices a, b
-	for (int i=0; i<m; i++){
-		free(a[i]);
-	}
 	free(a);
-	for (int i=0; i<m; i++){
-		free(b[i]);
-	}
 	free(b);
 
     return 0;
