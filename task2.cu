@@ -165,11 +165,6 @@ int main(int argc, char *argv[]) {
 	printf("Time to transfer to RAM = %.17f\n", elapsedTime);	
 	//time_transfering_to_cpu = elapsedTime;
 	
-	// free
-	free(a_h);	
-	free(b_h);	
-	cudaFree(a_d);	
-	cudaFree(b_d);	
 
 	// end //
 	//=================================================================//
@@ -223,15 +218,25 @@ int main(int argc, char *argv[]) {
 				cpu_time_calc_averages = (float)(time_end - time_start) / (CLOCKS_PER_SEC * 1e-3);
 				printf("Time to calculate averages on CPU = %.17f\n", cpu_time_calc_averages);
 
+				
+				printf("CODE ERROR = %d"	
+
 				free(thermometer);
 			}	
 			
-			// free matrices a, b
+
+			// free matrices cpu parts
 			free(a);
 			free(b);
 	}
 	// end //
 	//=================================================================//
+
+	// free cuda parts
+	free(a_h);	
+	free(b_h);	
+	cudaFree(a_d);	
+	cudaFree(b_d);	
 
 	if (show_timings_next_to_eachother == 1){
 		printf("\n//======================================//\n");
