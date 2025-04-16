@@ -18,13 +18,5 @@ task2: task2.cu task2_funcs.o task1_funcs.o
 task2_funcs.o: task2_funcs.cu
 	    $(NVCC) $(CFLAGS) -c $< $(LDFLAGS) $(DEBUG)
 
-
-#task2: task2.cu task2_funcs.o task1_funcs.o
-#	$(NVCC) -o $@ task2_funcs.o task1_funcs.o $< $(DEBUGNV) $(NVCCFLAGS)
-#
-#task2_funcs.o: task2_funcs.cu task2_funcs.h
-#	$(NVCC) -c task2_funcs.cu $(DEBUGNV) $(NVCCFLAGS)
-#
-
 clean:
 	rm task1 task2 *.o

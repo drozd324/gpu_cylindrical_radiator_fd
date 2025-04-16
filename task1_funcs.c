@@ -40,10 +40,10 @@ void calculate_avg_temp(float* matrix, int m, int n, float* thermometer){
  * 
  * @param[out] Actual time in seconds
  */
-double walltime(){
+extern float walltime(){
 	struct timeval t;
 	gettimeofday(&t, NULL);	
-	double wtime = (double) (t.tv_sec + t.tv_usec*1e-6);
-	return wtime;
+	float wtime = (float)(t.tv_sec + t.tv_usec*1e-6);
+	return wtime*1e-3;
 }
 	
