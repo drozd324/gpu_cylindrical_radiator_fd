@@ -2,8 +2,8 @@
 
 N=1000
 
-#./task2 -m $N -n $N -p 100 -t
-./task2 -m 100 -n 200 -p 100 -t
+./task2 -m $N -n $N -p 100 -t
+#./task2 -m 100 -n 100 -p 100 -t
 
 
 

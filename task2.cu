@@ -137,9 +137,11 @@ int main(int argc, char *argv[]) {
 	printf("Time for compute on GPU = %.17f\n", elapsedTime);
 	time_compute = elapsedTime;
 
+	float* thermometer_d;
+	float* thermometer_h = (float*) malloc(m * sizeof(float));
 	if (calc_avg_temp == 1){
-		float* thermometer_d;
 		cudaMalloc((void**)&thermometer_d, m * sizeof(float));
+		cudaMemset(thermometer_d, 0, m * sizeof(float));
 
 		cudaEventRecord(start, 0);
 		calculate_avg_temp_GPU<<<dimGrid, dimBlock>>>(a_d, m, n, thermometer_d);
@@ -151,8 +153,8 @@ int main(int argc, char *argv[]) {
 		printf("Time to calculate averages on GPU = %.17f\n", elapsedTime);	
 		time_calc_averages = elapsedTime;
 
-		cudaFree(thermometer_d);
 	}	
+	cudaMemcpy(thermometer_h, thermometer_d, m * sizeof(float), cudaMemcpyDeviceToHost);
 
 	cudaEventRecord(start, 0);
 	cudaMemcpy(a_h, a_d, m*n * sizeof(float), cudaMemcpyDeviceToHost);
@@ -176,6 +178,10 @@ int main(int argc, char *argv[]) {
 	float cpu_time_compute;
 	float cpu_time_calc_averages;
 
+	float* a;
+	float* b;
+	float* thermometer;
+
 	// CPU Calculation //
 	//=================================================================//
 	if (calc_cpu == 1){
@@ -185,8 +191,6 @@ int main(int argc, char *argv[]) {
 
 	
 			// allocalte matrices a, b
-			float* a;
-			float* b;
 			time_start = clock();
 			a = (float*) malloc(m*n * sizeof(float));
 			b = (float*) malloc(m*n * sizeof(float));
@@ -209,8 +213,8 @@ int main(int argc, char *argv[]) {
 			cpu_time_compute = (float)(time_end - time_start) / (CLOCKS_PER_SEC * 1e-3);
 			printf("Time for compute on CPU = %.17f\n", cpu_time_compute);
 				
+			thermometer = (float*) calloc(m, sizeof(float));
 			if (calc_avg_temp == 1){
-				float* thermometer = (float*) calloc(m, sizeof(float));
 
 				time_start = clock();
 				calculate_avg_temp(a, m, n, thermometer);
@@ -218,38 +222,50 @@ int main(int argc, char *argv[]) {
 				cpu_time_calc_averages = (float)(time_end - time_start) / (CLOCKS_PER_SEC * 1e-3);
 				printf("Time to calculate averages on CPU = %.17f\n", cpu_time_calc_averages);
 
-				
-				printf("CODE ERROR = %d"	
-
-				free(thermometer);
 			}	
-			
-
-			// free matrices cpu parts
-			free(a);
-			free(b);
 	}
 	// end //
 	//=================================================================//
 
+		
 	// free cuda parts
-	free(a_h);	
-	free(b_h);	
-	cudaFree(a_d);	
-	cudaFree(b_d);	
+	free(a_h);
+	free(b_h);
+	free(thermometer_h);
+	cudaFree(a_d);
+	cudaFree(b_d);
+	cudaFree(thermometer_d);
+
+	// free cpu parts
+	if (calc_cpu == 1){
+		free(a);
+		free(b);
+		free(thermometer);
+	}
 
 	if (show_timings_next_to_eachother == 1){
+		// compute errors
+		printf("\n");
+		float max_matrix_diff = max_diff(a_h, a, m, n);
+		float max_avg_diff = max_diff(thermometer_h, thermometer, m, 1);
+
 		printf("\n//======================================//\n");
 		printf("      SHOWING MAIN TIMINGS AND SPEEDUPS     \n");
 		printf("//======================================//\n\n");
 			
-		printf("Allocating memory    | CPU: %.17f | GPU: %.17f | Speedup: %.17f\n", 
+		printf("Allocating memory    | CPU: %f | GPU: %f | Speedup: %f\n", 
 				cpu_time_allocating, time_allocating, cpu_time_allocating/time_allocating);
-		printf("Main compute         | CPU: %.17f | GPU: %.17f | Speedup: %.17f\n", 
+		printf("Main compute         | CPU: %f | GPU: %f | Speedup: %f\n", 
 				cpu_time_compute, time_compute, cpu_time_compute/time_compute);
-		printf("Calculating averages | CPU: %.17f | GPU: %.17f | Speedup: %.17f\n", 
+		printf("Calculating averages | CPU: %f | GPU: %f | Speedup: %f\n", 
 				cpu_time_calc_averages, time_calc_averages, cpu_time_calc_averages/time_calc_averages);
 		printf("\n");
+
+		printf("Maximum difference between CPU and GPU | Avg temp: %f\n                                       | Matrices: %f\n",max_avg_diff, max_matrix_diff); 
+		
+		printf("\n");
+
+			
 
 
 		char filename[100];
@@ -258,8 +274,8 @@ int main(int argc, char *argv[]) {
 
 		//fprintf(fp,"m,n,block_size_x,block_size_y,cpu_time_allocating,time_allocating,speedup_time_allocating,cpu_time_compute,time_compute,speedup_time_compute,cpu_time_calc_averages,time_calc_averages,speedup_time_calc_averages);
 
-//				      1		2	3		4	5		6	7		8	9		10	  11	 12		13	
-		fprintf(fp, "%d,%d,%d,%d,%.17f,%.17f,%.17f,%.17f,%.17f,%.17f,%.17f,%.17f,%.17f", 
+//				     1	2 3	4 5	6 7	8  9  10 11	12 13	
+		fprintf(fp, "%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f", 
 				m, n, block_size_x, block_size_y,
 				cpu_time_allocating, time_allocating, cpu_time_allocating/time_allocating,
 				cpu_time_compute, time_compute, cpu_time_compute/time_compute,
