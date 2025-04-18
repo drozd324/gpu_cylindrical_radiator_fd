@@ -1,10 +1,10 @@
 #!/bin/bash
 
 N=1000
+ITER=100
 
-./task2 -m $N -n $N -p 100 -t
-#./task2 -m 100 -n 100 -p 100 -t
-
+#/usr/local/cuda-12.3/bin/compute-sanitizer ./task2 -m $N -n $N -p $ITER -t
+./task2 -m $N -n $N -p $ITER -t
 
 
 #echo "============= RUNNING TEST ================"

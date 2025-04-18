@@ -49,6 +49,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
+	
 	// GPU Calculation //
 	//=================================================================//
 	printf("\n//======================================//\n");
@@ -82,12 +83,8 @@ int main(int argc, char *argv[]) {
 	float* b_h;
 	a_h = (float*) malloc(m*n * sizeof(float));
 	b_h = (float*) malloc(m*n * sizeof(float));
-
-	// init on cpu
-	init_matrix(a_h, m, n);
-	init_matrix(b_h, m, n);
 	
-	// alloc on device global memory
+	// alloc on device
 	float* a_d;
 	float* b_d;
 	cudaEventRecord(start, 0);
@@ -101,57 +98,14 @@ int main(int argc, char *argv[]) {
 	printf("Time allocating on GPU = %.17f\n", elapsedTime);
 	time_allocating = elapsedTime;
 
-	// alloc surface memory
-	int width = n;
-	int height = m;
-	int size = width * height * sizeof(float);
-	float* host_input_data = (float*)malloc(size);
-
-	//////////////////////////////TEXTURE/SURFACE MEMORY SHTUFF////////////////////////////////////////////////
-
-	// Allocate CUDA arrays in device memory
-	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc(32, 0, 0, 0, cudaChannelFormatKindFloat);
-
-	cudaArray* array_a_d; // array a on device
-	cudaArray* array_b_d;
-	cudaMallocArray(&array_a_d, &channelDesc, width, height, cudaArraySurfaceLoadStore);
-	cudaMallocArray(&array_b_d, &channelDesc, width, height, cudaArraySurfaceLoadStore);
-
-	// Copy to device memory some data located at address host_input_data  in host memory
-	const size_t spitch = width * sizeof(float);
-	cudaMemcpy2DToArray(array_a_d, 0, 0, a_h, spitch, width * sizeof(float), height, cudaMemcpyHostToDevice);
-	cudaMemcpy2DToArray(array_b_d, 0, 0, b_h, spitch, width * sizeof(float), height, cudaMemcpyHostToDevice);
-
-	// Create the surface objects
-	// Declare the surface memory arrays
-	cudaSurfaceObject_t aSurf = 0;
-	cudaSurfaceObject_t bSurf = 0;
-
-	// Set up the structure for the surfaces
-	struct cudaResourceDesc resDesc_aSurf;
-	memset(&resDesc_aSurf, 0, sizeof(resDesc_aSurf));
-	resDesc_aSurf.resType = cudaResourceTypeArray;
-	resDesc_aSurf.res.array.array = array_a_d;
-
-	struct cudaResourceDesc resDesc_bSurf;
-	memset(&resDesc_bSurf, 0, sizeof(resDesc_bSurf));
-	resDesc_bSurf.resType = cudaResourceTypeArray;
-	resDesc_bSurf.res.array.array = array_b_d;
-
-	// Bind the arrays to the surface objects
-	cudaCreateSurfaceObject(&aSurf, &resDesc_aSurf);
-	cudaCreateSurfaceObject(&bSurf, &resDesc_bSurf);
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////	
-
+	// init on cpu
+	init_matrix(a_h, m, n);
+	init_matrix(b_h, m, n);
 
 	// copy to gpu
 	cudaEventRecord(start, 0);
 	cudaMemcpy(a_d, a_h, m*n * sizeof(float), cudaMemcpyHostToDevice);
 	cudaMemcpy(b_d, b_h, m*n * sizeof(float), cudaMemcpyHostToDevice);
-	// copy into surface memory
-	transformGlobalToSurface<<<dimGrid, dimBlock>>>(a_d, aSurf, m, n); 
-	transformGlobalToSurface<<<dimGrid, dimBlock>>>(b_d, bSurf, m, n); 
 	cudaEventRecord(finish, 0);
 
 	cudaEventSynchronize(start);
@@ -161,9 +115,19 @@ int main(int argc, char *argv[]) {
 	//time_transfering_to_gpu = elapsedTime;
 
 	cudaEventRecord(start, 0);
+	init_matrix_GPU<<<dimGrid, dimBlock>>>(a_d, m, n);
+	init_matrix_GPU<<<dimGrid, dimBlock>>>(b_d, m, n);
+	cudaEventRecord(finish, 0);
+	
+	cudaEventSynchronize(start);
+	cudaEventSynchronize(finish);
+	cudaEventElapsedTime(&elapsedTime, start, finish);
+	printf("Time initialising matrices on GPU = %.17f\n", elapsedTime);
+
+	cudaEventRecord(start, 0);
 	for (int i=0; i<iter; i++){
-		iterate_GPU<<<dimGrid, dimBlock>>>(aSurf, bSurf, m, n);
-		iterate_GPU<<<dimGrid, dimBlock>>>(bSurf, aSurf, m, n);
+		iterate_GPU<<<dimGrid, dimBlock>>>(a_d, b_d, m, n);
+		iterate_GPU<<<dimGrid, dimBlock>>>(b_d, a_d, m, n);
 	}
 	cudaEventRecord(finish, 0);
 		
@@ -192,12 +156,7 @@ int main(int argc, char *argv[]) {
 	}	
 	cudaMemcpy(thermometer_h, thermometer_d, m * sizeof(float), cudaMemcpyDeviceToHost);
 
-	// copy into RAM
 	cudaEventRecord(start, 0);
-	// copy surface memory into global
-	transformSurfaceToGlobal<<<dimGrid, dimBlock>>>(aSurf, a_d, m, n); 
-	transformSurfaceToGlobal<<<dimGrid, dimBlock>>>(bSurf, b_d, m, n); 
-
 	cudaMemcpy(a_h, a_d, m*n * sizeof(float), cudaMemcpyDeviceToHost);
 	cudaMemcpy(b_h, b_d, m*n * sizeof(float), cudaMemcpyDeviceToHost);
 	cudaEventRecord(finish, 0);
@@ -269,6 +228,20 @@ int main(int argc, char *argv[]) {
 	//=================================================================//
 
 		
+	// free cuda parts
+	free(a_h);
+	free(b_h);
+	free(thermometer_h);
+	cudaFree(a_d);
+	cudaFree(b_d);
+	cudaFree(thermometer_d);
+
+	// free cpu parts
+	if (calc_cpu == 1){
+		free(a);
+		free(b);
+		free(thermometer);
+	}
 
 	if (show_timings_next_to_eachother == 1){
 		// compute errors
@@ -312,22 +285,6 @@ int main(int argc, char *argv[]) {
 
 	}
 
-	// free cuda parts
-	free(a_h);
-	free(b_h);
-	free(thermometer_h);
-	cudaFree(a_d);
-	cudaFree(b_d);
-	cudaFreeArray(array_a_d); // frees cuda surface
-	cudaFreeArray(array_b_d);
-	cudaFree(thermometer_d);
-
-	// free cpu parts
-	if (calc_cpu == 1){
-		free(a);
-		free(b);
-		free(thermometer);
-	}
 
     return 0;
 }

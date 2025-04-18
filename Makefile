@@ -1,6 +1,6 @@
 CC = gcc
 NVCC = nvcc
-DEBUG =  -g # -Wextra -W -lefence #-Wall 
+DEBUG =  #-g # -Wextra -W -lefence #-Wall 
 DEBUGNV = #-g -G --target-processes 
 NVCCFLAGS = -O4 #-funroll-loops --use_fast_math --compiler-options  -arch=sm_75
 
