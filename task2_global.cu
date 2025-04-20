@@ -115,19 +115,9 @@ int main(int argc, char *argv[]) {
 	//time_transfering_to_gpu = elapsedTime;
 
 	cudaEventRecord(start, 0);
-	init_matrix_GPU<<<dimGrid, dimBlock>>>(a_d, m, n);
-	init_matrix_GPU<<<dimGrid, dimBlock>>>(b_d, m, n);
-	cudaEventRecord(finish, 0);
-	
-	cudaEventSynchronize(start);
-	cudaEventSynchronize(finish);
-	cudaEventElapsedTime(&elapsedTime, start, finish);
-	printf("Time initialising matrices on GPU = %.17f\n", elapsedTime);
-
-	cudaEventRecord(start, 0);
 	for (int i=0; i<iter; i++){
-		iterate_GPU<<<dimGrid, dimBlock>>>(a_d, b_d, m, n);
-		iterate_GPU<<<dimGrid, dimBlock>>>(b_d, a_d, m, n);
+		iterate_GPU_global<<<dimGrid, dimBlock>>>(a_d, b_d, m, n);
+		iterate_GPU_global<<<dimGrid, dimBlock>>>(b_d, a_d, m, n);
 	}
 	cudaEventRecord(finish, 0);
 		
@@ -228,21 +218,6 @@ int main(int argc, char *argv[]) {
 	//=================================================================//
 
 		
-	// free cuda parts
-	free(a_h);
-	free(b_h);
-	free(thermometer_h);
-	cudaFree(a_d);
-	cudaFree(b_d);
-	cudaFree(thermometer_d);
-
-	// free cpu parts
-	if (calc_cpu == 1){
-		free(a);
-		free(b);
-		free(thermometer);
-	}
-
 	if (show_timings_next_to_eachother == 1){
 		// compute errors
 		printf("\n");
@@ -274,7 +249,6 @@ int main(int argc, char *argv[]) {
 
 		//fprintf(fp,"m,n,block_size_x,block_size_y,cpu_time_allocating,time_allocating,speedup_time_allocating,cpu_time_compute,time_compute,speedup_time_compute,cpu_time_calc_averages,time_calc_averages,speedup_time_calc_averages);
 
-//				     1	2 3	4 5	6 7	8  9  10 11	12 13	
 		fprintf(fp, "%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f", 
 				m, n, block_size_x, block_size_y,
 				cpu_time_allocating, time_allocating, cpu_time_allocating/time_allocating,
@@ -283,6 +257,21 @@ int main(int argc, char *argv[]) {
 		fprintf(fp, "\n");
 		fclose(fp);
 
+	}
+
+	// free cuda parts
+	free(a_h);
+	free(b_h);
+	free(thermometer_h);
+	cudaFree(a_d);
+	cudaFree(b_d);
+	cudaFree(thermometer_d);
+
+	// free cpu parts
+	if (calc_cpu == 1){
+		free(a);
+		free(b);
+		free(thermometer);
 	}
 
 

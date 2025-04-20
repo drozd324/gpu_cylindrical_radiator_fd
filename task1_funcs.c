@@ -21,10 +21,10 @@ void iterate(float* nextMatrix, float* previousMatrix, int m, int n){
 	for (int i=0; i<m; i++){	
 		for (int j=0; j<n; j++){
 
-			mod_j_minus2 = (j - 2 + m) % m;
-			mod_j_minus1 = (j - 1 + m) % m;
-			mod_j_plus1 = (j + 1) % m;
-			mod_j_plus2 = (j + 2) % m;
+			mod_j_minus2 = (j - 2 + n) % n;
+			mod_j_minus1 = (j - 1 + n) % n;
+			mod_j_plus1 = (j + 1) % n;
+			mod_j_plus2 = (j + 2) % n;
  
 
 			nextMatrix[i*n + j] = ((1.60*previousMatrix[i*n + mod_j_minus2]) + 
@@ -42,7 +42,7 @@ void calculate_avg_temp(float* matrix, int m, int n, float* thermometer){
 		for (int j=0; j<n; j++){	
 			thermometer[i] += matrix[i*n + j];
 		}
-		thermometer[i] /= m;
+		thermometer[i] /= n;
 	}
 }
 
