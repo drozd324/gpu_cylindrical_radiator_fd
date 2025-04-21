@@ -2,9 +2,9 @@ CC = gcc
 NVCC = nvcc
 DEBUG =  #-g # -Wextra -W -lefence #-Wall 
 DEBUGNV = #-g -G --target-processes 
-NVCCFLAGS = -O4 #-funroll-loops --use_fast_math --compiler-options  -arch=sm_75
+NVCCFLAGS = -O4# -funroll-loops --use_fast_math --compiler-options  -arch=sm_75
 
-EXECS = task1 task2_global task2 #task2 task2_texture 
+EXECS = task1 task2 #task2 task2_texture task2_global  
 
 all: $(EXECS)
 
@@ -17,8 +17,8 @@ task1_funcs.o: task1_funcs.c
 task2: task2.cu task2_funcs.o task1_funcs.o	
 	    $(NVCC) $(NVCCFLAGS) -o $@ $^ $(DEBUG) $(DEBUGNV)
 
-task2_global: task2_global.cu task2_funcs.o task1_funcs.o	
-	    $(NVCC) $(NVCCFLAGS) -o $@ $^ $(DEBUG) $(DEBUGNV)
+#task2_global: task2_global.cu task2_funcs.o task1_funcs.o	
+#	    $(NVCC) $(NVCCFLAGS) -o $@ $^ $(DEBUG) $(DEBUGNV)
 
 task2_funcs.o: task2_funcs.cu
 	    $(NVCC) $(NVCCFLAGS) -c $< $(DEBUG) $(DEBUGNV)

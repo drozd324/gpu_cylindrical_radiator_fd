@@ -86,6 +86,10 @@ int main(int argc, char *argv[]) {
 	// init on cpu
 	init_matrix(a_h, m, n);
 	init_matrix(b_h, m, n);
+
+//	printf("before \n");
+//	printf("printing a_h\n");
+//	print_matrix(a_h, m, n);
 	
 	// alloc on device global memory
 	float* a_d;
@@ -173,6 +177,20 @@ int main(int argc, char *argv[]) {
 	printf("Time for compute on GPU = %.17f\n", elapsedTime);
 	time_compute = elapsedTime;
 
+	// copy into RAM
+	cudaEventRecord(start, 0);
+	transformSurfaceToGlobal<<<dimGrid, dimBlock>>>(aSurf, a_d, m, n); 
+	transformSurfaceToGlobal<<<dimGrid, dimBlock>>>(bSurf, b_d, m, n); 
+	cudaMemcpy(a_h, a_d, m*n * sizeof(float), cudaMemcpyDeviceToHost);
+	cudaMemcpy(b_h, b_d, m*n * sizeof(float), cudaMemcpyDeviceToHost);
+	cudaEventRecord(finish, 0);
+	
+	cudaEventSynchronize(start);
+	cudaEventSynchronize(finish);
+	cudaEventElapsedTime(&elapsedTime, start, finish);
+	printf("Time to transfer to RAM = %.17f\n", elapsedTime);	
+	//time_transfering_to_cpu = elapsedTime;
+
 	float* thermometer_d;
 	float* thermometer_h = (float*) malloc(m * sizeof(float));
 	if (calc_avg_temp == 1){
@@ -192,21 +210,6 @@ int main(int argc, char *argv[]) {
 	}	
 	cudaMemcpy(thermometer_h, thermometer_d, m * sizeof(float), cudaMemcpyDeviceToHost);
 
-	// copy into RAM
-	cudaEventRecord(start, 0);
-	// copy surface memory into global
-	transformSurfaceToGlobal<<<dimGrid, dimBlock>>>(aSurf, a_d, m, n); 
-	transformSurfaceToGlobal<<<dimGrid, dimBlock>>>(bSurf, b_d, m, n); 
-
-	cudaMemcpy(a_h, a_d, m*n * sizeof(float), cudaMemcpyDeviceToHost);
-	cudaMemcpy(b_h, b_d, m*n * sizeof(float), cudaMemcpyDeviceToHost);
-	cudaEventRecord(finish, 0);
-	
-	cudaEventSynchronize(start);
-	cudaEventSynchronize(finish);
-	cudaEventElapsedTime(&elapsedTime, start, finish);
-	printf("Time to transfer to RAM = %.17f\n", elapsedTime);	
-	//time_transfering_to_cpu = elapsedTime;
 	
 
 	// end //
@@ -245,6 +248,10 @@ int main(int argc, char *argv[]) {
 			time_end = clock();
 			printf("Time initialising matrices on CPU = %.17f\n", (float)(time_end - time_start) / (CLOCKS_PER_SEC * 1e-3));
 			
+//			printf("before \n");
+//			printf("printing a\n");
+//			print_matrix(a, m, n);
+
 			time_start = clock();
 			for (int i=0; i<iter; i++){
 				iterate(a, b, m, n);
@@ -306,6 +313,12 @@ int main(int argc, char *argv[]) {
 		fprintf(fp, "\n");
 		fclose(fp);
 
+//		printf("after \n");
+//		printf("printing a_h\n");
+//		print_matrix(a_h, m, n);
+//		printf("printing a\n");
+//		print_matrix(a, m, n);
+
 	}
 
 	// free cuda parts
@@ -324,6 +337,7 @@ int main(int argc, char *argv[]) {
 		free(b);
 		free(thermometer);
 	}
+
 
     return 0;
 }

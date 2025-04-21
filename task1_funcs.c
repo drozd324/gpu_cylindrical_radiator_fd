@@ -1,5 +1,15 @@
 #include "task1_funcs.h"
 
+void print_matrix(float* a, int m, int n){
+	for (int i=0; i<m; i++){
+		for (int j=0; j<n; j++){
+			printf("%f ", a[i*n + j]);
+		}
+		printf("\n");
+	}
+}
+
+
 void init_matrix(float* matrix, int m, int n){
 	for (int i=0; i<m; i++){
 		matrix[i*n + 0] = 0.98 * (float)((i+1)*(i+1)) / (float)(n*n); 
@@ -26,7 +36,6 @@ void iterate(float* nextMatrix, float* previousMatrix, int m, int n){
 			mod_j_plus1 = (j + 1) % n;
 			mod_j_plus2 = (j + 2) % n;
  
-
 			nextMatrix[i*n + j] = ((1.60*previousMatrix[i*n + mod_j_minus2]) + 
 								(1.55*previousMatrix[i*n + mod_j_minus1]) + 
 								previousMatrix[i*n + j] + 

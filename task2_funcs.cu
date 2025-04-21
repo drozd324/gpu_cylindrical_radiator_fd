@@ -1,22 +1,22 @@
 #include "task2_funcs.h"
 
-__global__ void copySurface(cudaSurfaceObject_t inputSurface, cudaSurfaceObject_t outputSurface, int m, int n) {
-	unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	unsigned int idy = blockIdx.y * blockDim.y + threadIdx.y;
-
-	if (idx<n && idy<m) {
-		float data;
-		surf2Dread(&data, inputSurface, idx*4, idy);
-		surf2Dwrite(data, outputSurface, idx*4, idy);
-	}
-}
+//__global__ void copySurface(cudaSurfaceObject_t inputSurface, cudaSurfaceObject_t outputSurface, int m, int n) {
+//	unsigned int idx = blockIdx.x * blockDim.x + threadIdx.x;
+//	unsigned int idy = blockIdx.y * blockDim.y + threadIdx.y;
+//
+//	if (idx<n && idy<m) {
+//		float data;
+//		surf2Dread(&data, inputSurface, idx*4, idy);
+//		surf2Dwrite(data, outputSurface, idx*4, idy);
+//	}
+//}
 
 __global__ void transformSurfaceToGlobal(cudaSurfaceObject_t surface, float* gpu_data, int m, int n) {
 	unsigned int idx = blockIdx.x*blockDim.x + threadIdx.x;
 	unsigned int idy = blockIdx.y*blockDim.y + threadIdx.y;
 
-	if ( (idx < n) && (idy < m) ) {
-		surf2Dread(&(gpu_data[idy*n+idx]), surface, idx*4 , idy);
+	if ((idx<m) && (idy<n)) {
+		surf2Dread(&(gpu_data[idx*n + idy]), surface, idx*4 , idy);
     }
 }
 
@@ -24,8 +24,8 @@ __global__ void transformGlobalToSurface(float* gpu_data, cudaSurfaceObject_t su
 	unsigned int idx = blockIdx.x*blockDim.x + threadIdx.x;
 	unsigned int idy = blockIdx.y*blockDim.y + threadIdx.y;
 
-	if ( (idx < n) && (idy < m) ) {
-		surf2Dwrite(gpu_data[idy*n + idx], surface, idx*4, idy);
+	if ((idx<m) && (idy<n)) {
+		surf2Dwrite(gpu_data[idx*n + idy], surface, idx*4, idy);
     }
 }
 
@@ -85,6 +85,7 @@ __global__ void calculate_avg_temp_GPU(float* matrix, int m, int n, float* therm
 }
 
 
+// iteration function for global memory data
 __global__ void iterate_GPU_global(float* nextMatrix, float* previousMatrix, int m, int n){
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
 	int idy = blockIdx.y * blockDim.y + threadIdx.y;
@@ -110,32 +111,37 @@ __global__ void iterate_GPU_global(float* nextMatrix, float* previousMatrix, int
 	}
 }
 
-__global__ void init_matrix_GPU_global(float* matrix, int m, int n){
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	int idy = blockIdx.y * blockDim.y + threadIdx.y;
 
-	if ((idx<m) && (idy==0)){
-		matrix[idx*n + 0] = 0.98 * (float)((idx+1)*(idx+1)) / (float)(n*n); 
-	}
-	
-	if ((idx<m) &&  ((1<=idy) && (idy<n))){
-		matrix[idx*n + idy] = ( 0.98 * (float)((idx+1)*(idx+1)) / (float)(n*n) )
-								* ( ((float)((m-idy)*(m-idy))) / ((float)(m*m)));	
+// hw1 reduce code
+
+__global__ void sum_rows_gpu(int m, int n, float* a, float* v){
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx < m){
+        v[idx] = 0;
+       	for (int j=0; j<n; j++){ 
+           	v[idx] += (0 < (a[idx*n + j])) ? a[idx*n + j] : -a[idx*n + j];
+       	}
 	}
 }
 
-// wont work
-//__global__ void iterate_GPU_texture(cudaTextureObject_t nextTexture, cudaTextureObject_t prevTexture, int m, int n){
-//	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-//	int idy = blockIdx.y * blockDim.y + threadIdx.y;
-//
-//	if ((idx<n) && (idy<m)){
-//		// compute
-//		tex2D<textureType>(nextTexture, idx, idy) = ( (1.60*tex2D<textureType>(prevTexture, idx, idy-2)  + 
-//														(1.55*tex2D<textureType>(prevTexture, idx, idy-1)) +
-//														tex2D<textureType>(prevTexture, idx, idy)          +
-//														(0.60*tex2D<textureType>(prevTexture, idx, idy+1)) +
-//														(0.25*tex2D<textureType>(prevTexture, idx, idy+2)) ) 
-//														/ ((float)(5.0));
-//	}
-//}
+__global__ void sum_columns_gpu(int m, int n, float* a, float* v){
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx < n){
+        v[idx] = 0;
+        for (int j=0; j<m; j++){ 
+           	v[idx] += (0 < (a[idx*n + j])) ? a[idx*n + j] : -a[idx*n + j];
+        }
+    }
+}
+
+__global__ void sum_vector_gpu(int n, float* v, float *out){
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if (idx == 0){
+		*out = 0;
+		for (int i=0; i<n; i++){
+			*out += v[i];	
+		}
+	}
+}
+
+// hw1 reduce code end
