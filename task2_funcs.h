@@ -9,3 +9,6 @@ __global__ void iterate_GPU_global(float* nextMatrix, float* previousMatrix, int
 __global__ void init_matrix_GPU_global(float* matrix, int m, int n);
 
 __global__ void calculate_avg_temp_GPU(float* matrix, int m, int n, float* thermometer);
+
+
+__global__ void sum_rows_gpu(int m, int n, float* a, float* v);

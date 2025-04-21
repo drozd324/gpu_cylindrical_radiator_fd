@@ -13,12 +13,13 @@ int main(int argc, char *argv[]) {
 	int iter = 10;
 	int calc_cpu = 0;
 	int calc_avg_temp = 0;
+	int calc_avg_temp_no_atomic = 0;
 	int show_timings_next_to_eachother = 0;
 
 	int block_size_x = 2; //threads per block
 	int block_size_y = 2; //threads per block
 
-    while ((option = getopt(argc, argv, "m:n:p:x:y:act")) != -1) {
+    while ((option = getopt(argc, argv, "m:n:p:x:y:aAct")) != -1) {
         switch (option) {
             case 'm': // set num cols m of matrix
 	            m = atoi(optarg);
@@ -37,6 +38,10 @@ int main(int argc, char *argv[]) {
 				break;
 			case 'a': // sets caclulation of average temperature for each row
 				calc_avg_temp = 1;
+				break;
+			case 'A': // sets caclulation of average temperature for each row without atomic
+				calc_avg_temp = 1;
+				calc_avg_temp_no_atomic = 1;
 				break;
 			case 'c': // caclulates cpu version of algorithm
 				calc_cpu = 1;
@@ -197,9 +202,16 @@ int main(int argc, char *argv[]) {
 		cudaMalloc((void**)&thermometer_d, m * sizeof(float));
 		cudaMemset(thermometer_d, 0, m * sizeof(float));
 
-		cudaEventRecord(start, 0);
-		calculate_avg_temp_GPU<<<dimGrid, dimBlock>>>(a_d, m, n, thermometer_d);
-		cudaEventRecord(finish, 0);
+		if (calc_avg_temp_no_atomic == 0){
+			cudaEventRecord(start, 0);
+			calculate_avg_temp_GPU<<<dimGrid, dimBlock>>>(a_d, m, n, thermometer_d);
+			cudaEventRecord(finish, 0);
+		} else { // from hw1
+			cudaEventRecord(start, 0);
+ 			sum_rows_gpu<<<dimGrid, dimBlock>>>(m, n, a_d, thermometer_d);
+			cudaEventRecord(finish, 0);
+
+		}
 
 		cudaEventSynchronize(start);
 		cudaEventSynchronize(finish);

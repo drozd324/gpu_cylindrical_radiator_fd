@@ -124,24 +124,4 @@ __global__ void sum_rows_gpu(int m, int n, float* a, float* v){
 	}
 }
 
-__global__ void sum_columns_gpu(int m, int n, float* a, float* v){
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	if (idx < n){
-        v[idx] = 0;
-        for (int j=0; j<m; j++){ 
-           	v[idx] += (0 < (a[idx*n + j])) ? a[idx*n + j] : -a[idx*n + j];
-        }
-    }
-}
-
-__global__ void sum_vector_gpu(int n, float* v, float *out){
-	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	if (idx == 0){
-		*out = 0;
-		for (int i=0; i<n; i++){
-			*out += v[i];	
-		}
-	}
-}
-
 // hw1 reduce code end
