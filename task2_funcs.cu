@@ -116,8 +116,10 @@ __global__ void iterate_GPU_global(float* nextMatrix, float* previousMatrix, int
 
 __global__ void sum_rows_gpu(int m, int n, float* a, float* v){
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+
 	if (idx < m){
         v[idx] = 0;
+
        	for (int j=0; j<n; j++){ 
            	v[idx] += (0 < (a[idx*n + j])) ? a[idx*n + j] : -a[idx*n + j];
        	}

@@ -5,7 +5,7 @@ COLUMN_NAMES="m,n,block_size_x,block_size_y,cpu_time_allocating,time_allocating,
 FILE_NAME="writeup/task3.csv"
 > FILE_NAME
 
-NUM_ITER=100
+NUM_ITER=10
 
 POWERS=()
 NUM_POWERS=11 #do 14

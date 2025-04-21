@@ -5,7 +5,7 @@ ITER=100
 
 #/usr/local/cuda-12.3/bin/compute-sanitizer ./task2 -m $N -n $N -p $ITER -t
 #cuda-memcheck ./task2 -m $N -n $N -p $ITER -x 20 -y 20
-./task2 -m $N -n $N -p $ITER -x 20 -y 20 -t -A
+./task2 -m $N -n $N -p $ITER -x 20 -y 20 -t
 
 
 #echo "============= RUNNING TEST ================"

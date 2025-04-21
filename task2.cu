@@ -16,6 +16,9 @@ int main(int argc, char *argv[]) {
 	int calc_avg_temp_no_atomic = 0;
 	int show_timings_next_to_eachother = 0;
 
+	char filename[100];
+	sprintf(filename, "writeup/task3.csv");
+
 	int block_size_x = 2; //threads per block
 	int block_size_y = 2; //threads per block
 
@@ -39,9 +42,11 @@ int main(int argc, char *argv[]) {
 			case 'a': // sets caclulation of average temperature for each row
 				calc_avg_temp = 1;
 				break;
-			case 'A': // sets caclulation of average temperature for each row without atomic
+			case 'A': // sets caclulation of average temperature for each row with hw1 implementation
 				calc_avg_temp = 1;
 				calc_avg_temp_no_atomic = 1;
+				sprintf(filename, "writeup/task3_old_reduce.csv");
+				
 				break;
 			case 'c': // caclulates cpu version of algorithm
 				calc_cpu = 1;
@@ -312,8 +317,6 @@ int main(int argc, char *argv[]) {
 		printf("\n");
 
 
-		char filename[100];
-		sprintf(filename, "writeup/task3.csv");
 		FILE *fp = fopen(filename, "a");
 
 		//fprintf(fp,"m,n,block_size_x,block_size_y,cpu_time_allocating,time_allocating,speedup_time_allocating,cpu_time_compute,time_compute,speedup_time_compute,cpu_time_calc_averages,time_calc_averages,speedup_time_calc_averages);

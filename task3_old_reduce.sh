@@ -5,7 +5,7 @@ COLUMN_NAMES="m,n,block_size_x,block_size_y,cpu_time_allocating,time_allocating,
 FILE_NAME="writeup/task3_old_reduce.csv"
 > FILE_NAME
 
-NUM_ITER=100
+NUM_ITER=10
 
 POWERS=()
 NUM_POWERS=11 #do 14
@@ -27,9 +27,10 @@ echo $COLUMN_NAMES > $FILE_NAME
 for (( i=0; i<$NUM_POWERS; i++ )); do
 	for (( j=i; j<$NUM_POWERS; j++ )); do
 
-			TEMP=$(./task2 -m ${POWERS[$j]} -n ${POWERS[$j]} -p $NUM_ITER -x ${POWERS[$i]} -y ${POWERS[$i]} -t -A)
+			TEMP=$(./task2 -m ${POWERS[$j]} -n ${POWERS[$j]} -p $NUM_ITER -x ${POWERS[$i]} -y ${POWERS[$i]} -A -t)
 
-		echo "./task2 -m ${POWERS[$j]} -n ${POWERS[$j]} -p $NUM_ITER -x ${POWERS[$i]} -y ${POWERS[$i]} -t"
+		echo "./task2 -m ${POWERS[$j]} -n ${POWERS[$j]} -p $NUM_ITER -x ${POWERS[$i]} -y ${POWERS[$i]} -A -t"
+
 
 	done
 done
