@@ -15,6 +15,7 @@ int main(int argc, char *argv[]) {
 	int calc_avg_temp = 0;
 	int calc_avg_temp_no_atomic = 0;
 	int show_timings_next_to_eachother = 0;
+	int save_data = 0;
 
 	char filename[100];
 	sprintf(filename, "writeup/task3.csv");
@@ -22,7 +23,7 @@ int main(int argc, char *argv[]) {
 	int block_size_x = 2; //threads per block
 	int block_size_y = 2; //threads per block
 
-    while ((option = getopt(argc, argv, "m:n:p:x:y:aAct")) != -1) {
+    while ((option = getopt(argc, argv, "m:n:p:x:y:aActs")) != -1) {
         switch (option) {
             case 'm': // set num cols m of matrix
 	            m = atoi(optarg);
@@ -56,6 +57,12 @@ int main(int argc, char *argv[]) {
 				calc_cpu = 1;
 				calc_avg_temp = 1;
 				break;
+			case 's': // saves all the data to a csv file
+				show_timings_next_to_eachother = 1;
+				calc_cpu = 1;
+				calc_avg_temp = 1;
+				save_data = 1;
+				break;
         }
     }
 
@@ -66,7 +73,7 @@ int main(int argc, char *argv[]) {
 	printf("//======================================//\n\n");
 
 	if ( ((n*m) % (block_size_x*block_size_y)) != 0){
-		fprintf(stderr, "ERROR: block size (number of threads per block) doesnt divide the total size of the matrix\n");
+		fprintf(stderr, "[ERROR]: block size (number of threads per block) doesnt divide the total size of the matrix\n");
 		return 1;
 	}
 
@@ -81,17 +88,17 @@ int main(int argc, char *argv[]) {
 	cudaEventCreate(&finish);
 	float elapsedTime;
 
-	float time_allocating;
-	//float time_transfering_to_gpu;
-	float time_compute;
-	float time_calc_averages;
-	//float time_transfering_to_cpu;
+	double time_allocating;
+	//double time_transfering_to_gpu;
+	double time_compute;
+	double time_calc_averages;
+	//double time_transfering_to_cpu;
 
 	// allocalte matrices a_h, b_h on host
-	float* a_h;
-	float* b_h;
-	a_h = (float*) malloc(m*n * sizeof(float));
-	b_h = (float*) malloc(m*n * sizeof(float));
+	double* a_h;
+	double* b_h;
+	a_h = (double*) malloc(m*n * sizeof(double));
+	b_h = (double*) malloc(m*n * sizeof(double));
 
 	// init on cpu
 	init_matrix(a_h, m, n);
@@ -102,29 +109,29 @@ int main(int argc, char *argv[]) {
 //	print_matrix(a_h, m, n);
 	
 	// alloc on device global memory
-	float* a_d;
-	float* b_d;
+	double* a_d;
+	double* b_d;
 	cudaEventRecord(start, 0);
-	cudaMalloc((void**)&a_d, m*n * sizeof(float));
-	cudaMalloc((void**)&b_d, m*n * sizeof(float));
+	cudaMalloc((void**)&a_d, m*n * sizeof(double));
+	cudaMalloc((void**)&b_d, m*n * sizeof(double));
 	cudaEventRecord(finish, 0);
 
 	cudaEventSynchronize(start);
 	cudaEventSynchronize(finish);
 	cudaEventElapsedTime(&elapsedTime, start, finish);
-	printf("Time allocating on GPU = %.17f\n", elapsedTime);
+	printf("Time allocating on GPU = %lf\n", elapsedTime);
 	time_allocating = elapsedTime;
 
 	// alloc surface memory
 	int width = n;
 	int height = m;
-	int size = width * height * sizeof(float);
-	float* host_input_data = (float*)malloc(size);
+	int size = width * height * sizeof(double);
+	double* host_input_data = (double*)malloc(size);
 
 	//////////////////////////////TEXTURE/SURFACE MEMORY SHTUFF////////////////////////////////////////////////
 
 	// Allocate CUDA arrays in device memory
-	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc(32, 32, 0, 0, cudaChannelFormatKindFloat);
+	cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc(64, 64, 0, 0, cudaChannelFormatKindFloat);
 
 	cudaArray* array_a_d; // array a on device
 	cudaArray* array_b_d;
@@ -132,9 +139,9 @@ int main(int argc, char *argv[]) {
 	cudaMallocArray(&array_b_d, &channelDesc, width, height, cudaArraySurfaceLoadStore);
 
 	// Copy to device memory some data located at address host_input_data  in host memory
-	const size_t spitch = width * sizeof(float);
-	cudaMemcpy2DToArray(array_a_d, 0, 0, a_h, spitch, width * sizeof(float), height, cudaMemcpyHostToDevice);
-	cudaMemcpy2DToArray(array_b_d, 0, 0, b_h, spitch, width * sizeof(float), height, cudaMemcpyHostToDevice);
+	const size_t spitch = width * sizeof(double);
+	cudaMemcpy2DToArray(array_a_d, 0, 0, a_h, spitch, width * sizeof(double), height, cudaMemcpyHostToDevice);
+	cudaMemcpy2DToArray(array_b_d, 0, 0, b_h, spitch, width * sizeof(double), height, cudaMemcpyHostToDevice);
 
 	// Create the surface objects
 	// Declare the surface memory arrays
@@ -161,8 +168,8 @@ int main(int argc, char *argv[]) {
 
 	// copy to gpu
 	cudaEventRecord(start, 0);
-	cudaMemcpy(a_d, a_h, m*n * sizeof(float), cudaMemcpyHostToDevice);
-	cudaMemcpy(b_d, b_h, m*n * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(a_d, a_h, m*n * sizeof(double), cudaMemcpyHostToDevice);
+	cudaMemcpy(b_d, b_h, m*n * sizeof(double), cudaMemcpyHostToDevice);
 	// copy into surface memory
 	transformGlobalToSurface<<<dimGrid, dimBlock>>>(a_d, aSurf, m, n); 
 	transformGlobalToSurface<<<dimGrid, dimBlock>>>(b_d, bSurf, m, n); 
@@ -171,7 +178,7 @@ int main(int argc, char *argv[]) {
 	cudaEventSynchronize(start);
 	cudaEventSynchronize(finish);
 	cudaEventElapsedTime(&elapsedTime, start, finish);
-	printf("Time transfering to GPU = %.17f\n", elapsedTime);
+	printf("Time transfering to GPU = %lf\n", elapsedTime);
 	//time_transfering_to_gpu = elapsedTime;
 
 	cudaEventRecord(start, 0);
@@ -184,28 +191,28 @@ int main(int argc, char *argv[]) {
 	cudaEventSynchronize(start);
 	cudaEventSynchronize(finish);
 	cudaEventElapsedTime(&elapsedTime, start, finish);
-	printf("Time for compute on GPU = %.17f\n", elapsedTime);
+	printf("Time for compute on GPU = %lf\n", elapsedTime);
 	time_compute = elapsedTime;
 
 	// copy into RAM
 	cudaEventRecord(start, 0);
 	transformSurfaceToGlobal<<<dimGrid, dimBlock>>>(aSurf, a_d, m, n); 
 	transformSurfaceToGlobal<<<dimGrid, dimBlock>>>(bSurf, b_d, m, n); 
-	cudaMemcpy(a_h, a_d, m*n * sizeof(float), cudaMemcpyDeviceToHost);
-	cudaMemcpy(b_h, b_d, m*n * sizeof(float), cudaMemcpyDeviceToHost);
+	cudaMemcpy(a_h, a_d, m*n * sizeof(double), cudaMemcpyDeviceToHost);
+	cudaMemcpy(b_h, b_d, m*n * sizeof(double), cudaMemcpyDeviceToHost);
 	cudaEventRecord(finish, 0);
 	
 	cudaEventSynchronize(start);
 	cudaEventSynchronize(finish);
 	cudaEventElapsedTime(&elapsedTime, start, finish);
-	printf("Time to transfer to RAM = %.17f\n", elapsedTime);	
+	printf("Time to transfer to RAM = %lf\n", elapsedTime);	
 	//time_transfering_to_cpu = elapsedTime;
 
-	float* thermometer_d;
-	float* thermometer_h = (float*) malloc(m * sizeof(float));
+	double* thermometer_d;
+	double* thermometer_h = (double*) malloc(m * sizeof(double));
 	if (calc_avg_temp == 1){
-		cudaMalloc((void**)&thermometer_d, m * sizeof(float));
-		cudaMemset(thermometer_d, 0, m * sizeof(float));
+		cudaMalloc((void**)&thermometer_d, m * sizeof(double));
+		cudaMemset(thermometer_d, 0, m * sizeof(double));
 
 		if (calc_avg_temp_no_atomic == 0){
 			cudaEventRecord(start, 0);
@@ -221,11 +228,11 @@ int main(int argc, char *argv[]) {
 		cudaEventSynchronize(start);
 		cudaEventSynchronize(finish);
 		cudaEventElapsedTime(&elapsedTime, start, finish);
-		printf("Time to calculate averages on GPU = %.17f\n", elapsedTime);	
+		printf("Time to calculate averages on GPU = %lf\n", elapsedTime);	
 		time_calc_averages = elapsedTime;
 
 	}	
-	cudaMemcpy(thermometer_h, thermometer_d, m * sizeof(float), cudaMemcpyDeviceToHost);
+	cudaMemcpy(thermometer_h, thermometer_d, m * sizeof(double), cudaMemcpyDeviceToHost);
 
 	
 
@@ -235,13 +242,13 @@ int main(int argc, char *argv[]) {
 		
 	clock_t time_start;			
 	clock_t time_end;			
-	float cpu_time_allocating;
-	float cpu_time_compute;
-	float cpu_time_calc_averages;
+	double cpu_time_allocating;
+	double cpu_time_compute;
+	double cpu_time_calc_averages;
 
-	float* a;
-	float* b;
-	float* thermometer;
+	double* a;
+	double* b;
+	double* thermometer;
 
 	// CPU Calculation //
 	//=================================================================//
@@ -253,17 +260,17 @@ int main(int argc, char *argv[]) {
 	
 			// allocalte matrices a, b
 			time_start = clock();
-			a = (float*) malloc(m*n * sizeof(float));
-			b = (float*) malloc(m*n * sizeof(float));
+			a = (double*) malloc(m*n * sizeof(double));
+			b = (double*) malloc(m*n * sizeof(double));
 			time_end = clock();
-			cpu_time_allocating = (float)(time_end - time_start) / (CLOCKS_PER_SEC * 1e-3);
-			printf("Time allocating on CPU = %.17f\n", cpu_time_allocating);
+			cpu_time_allocating = (double)(time_end - time_start) / (CLOCKS_PER_SEC * 1e-3);
+			printf("Time allocating on CPU = %lf\n", cpu_time_allocating);
 			
 			time_start = clock();
 			init_matrix(a, m, n);
 			init_matrix(b, m, n);
 			time_end = clock();
-			printf("Time initialising matrices on CPU = %.17f\n", (float)(time_end - time_start) / (CLOCKS_PER_SEC * 1e-3));
+			printf("Time initialising matrices on CPU = %lf\n", (double)(time_end - time_start) / (CLOCKS_PER_SEC * 1e-3));
 			
 //			printf("before \n");
 //			printf("printing a\n");
@@ -275,17 +282,17 @@ int main(int argc, char *argv[]) {
 				iterate(b, a, m, n);
 			}
 			time_end = clock();
-			cpu_time_compute = (float)(time_end - time_start) / (CLOCKS_PER_SEC * 1e-3);
-			printf("Time for compute on CPU = %.17f\n", cpu_time_compute);
+			cpu_time_compute = (double)(time_end - time_start) / (CLOCKS_PER_SEC * 1e-3);
+			printf("Time for compute on CPU = %lf\n", cpu_time_compute);
 				
-			thermometer = (float*) calloc(m, sizeof(float));
+			thermometer = (double*) calloc(m, sizeof(double));
 			if (calc_avg_temp == 1){
 
 				time_start = clock();
 				calculate_avg_temp(a, m, n, thermometer);
 				time_end = clock();
-				cpu_time_calc_averages = (float)(time_end - time_start) / (CLOCKS_PER_SEC * 1e-3);
-				printf("Time to calculate averages on CPU = %.17f\n", cpu_time_calc_averages);
+				cpu_time_calc_averages = (double)(time_end - time_start) / (CLOCKS_PER_SEC * 1e-3);
+				printf("Time to calculate averages on CPU = %lf\n", cpu_time_calc_averages);
 
 			}	
 	}
@@ -297,36 +304,36 @@ int main(int argc, char *argv[]) {
 	if (show_timings_next_to_eachother == 1){
 		// compute errors
 		printf("\n");
-		float max_matrix_diff = max_diff(a_h, a, m, n);
-		float max_avg_diff = max_diff(thermometer_h, thermometer, m, 1);
+		double max_matrix_diff = max_diff(a_h, a, m, n);
+		double max_avg_diff = max_diff(thermometer_h, thermometer, m, 1);
 
 		printf("\n//======================================//\n");
 		printf("      SHOWING MAIN TIMINGS AND SPEEDUPS     \n");
 		printf("//======================================//\n\n");
 			
-		printf("Allocating memory    | CPU: %f | GPU: %f | Speedup: %f\n", 
+		printf("Allocating memory    | CPU: %lf | GPU: %lf | Speedup: %lf\n", 
 				cpu_time_allocating, time_allocating, cpu_time_allocating/time_allocating);
-		printf("Main compute         | CPU: %f | GPU: %f | Speedup: %f\n", 
+		printf("Main compute         | CPU: %lf | GPU: %lf | Speedup: %lf\n", 
 				cpu_time_compute, time_compute, cpu_time_compute/time_compute);
-		printf("Calculating averages | CPU: %f | GPU: %f | Speedup: %f\n", 
+		printf("Calculating averages | CPU: %lf | GPU: %lf | Speedup: %lf\n", 
 				cpu_time_calc_averages, time_calc_averages, cpu_time_calc_averages/time_calc_averages);
 		printf("\n");
 
-		printf("Maximum difference between CPU and GPU | Avg temp: %f\n                                       | Matrices: %f\n",max_avg_diff, max_matrix_diff); 
+		printf("Maximum difference between CPU and GPU | Avg temp: %lf\n                                       | Matrices: %lf\n",max_avg_diff, max_matrix_diff); 
 		
 		printf("\n");
 
+		if (save_data == 1){
+			FILE *fp = fopen(filename, "a");
 
-		FILE *fp = fopen(filename, "a");
-
-		//fprintf(fp,"m,n,block_size_x,block_size_y,cpu_time_allocating,time_allocating,speedup_time_allocating,cpu_time_compute,time_compute,speedup_time_compute,cpu_time_calc_averages,time_calc_averages,speedup_time_calc_averages);
-		fprintf(fp, "%d,%d,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f", 
-				m, n, block_size_x, block_size_y,
-				cpu_time_allocating, time_allocating, cpu_time_allocating/time_allocating,
-				cpu_time_compute, time_compute, cpu_time_compute/time_compute,
-				cpu_time_calc_averages, time_calc_averages, cpu_time_calc_averages/time_calc_averages);
-		fprintf(fp, "\n");
-		fclose(fp);
+			fprintf(fp, "%d,%d,%d,%d,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf", 
+					m, n, block_size_x, block_size_y,
+					cpu_time_allocating, time_allocating, cpu_time_allocating/time_allocating,
+					cpu_time_compute, time_compute, cpu_time_compute/time_compute,
+					cpu_time_calc_averages, time_calc_averages, cpu_time_calc_averages/time_calc_averages);
+			fprintf(fp, "\n");
+			fclose(fp);
+		}
 
 //		printf("after \n");
 //		printf("printing a_h\n");
