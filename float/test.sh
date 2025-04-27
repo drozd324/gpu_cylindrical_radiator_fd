@@ -8,6 +8,7 @@ ITER=100
 ./task2 -m $N -n $N -p $ITER -x 20 -y 20 -t
 
 
+# this one takes way too long for the cpu
 #echo "============= RUNNING TEST ================"
 #echo "    ./task2 -m 15360 -n 15360 -p 1000   "
 #echo "==========================================="

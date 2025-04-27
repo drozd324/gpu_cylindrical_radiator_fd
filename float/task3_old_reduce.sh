@@ -8,7 +8,7 @@ FILE_NAME="writeup/task3_old_reduce.csv"
 NUM_ITER=10
 
 POWERS=()
-NUM_POWERS=11 #do 14
+NUM_POWERS=14 #do 14
 
 for ((i=0; i<$NUM_POWERS; i++)); do
 	POWERS+=($((2 ** i)))
